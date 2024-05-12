@@ -1,20 +1,6 @@
+use super::verify_input_file;
 use clap::Parser;
-use std::{fmt, path::Path, str::FromStr};
-
-#[derive(Debug, Parser)]
-#[command(name = "rcli", version, author, about = None, long_about = None)]
-pub struct Cli {
-    #[command(subcommand)]
-    pub cmd: SubCommand,
-}
-
-#[derive(Debug, Parser)]
-pub enum SubCommand {
-    #[command(name = "csv", about = "Show CSV or convert CSV to other formats")]
-    Csv(CsvOpts),
-    #[command(name = "genpass", about = "Generate a random password")]
-    GenPass(GenPassOpts),
-}
+use std::{fmt, str::FromStr};
 
 #[derive(Debug, Clone, Copy)]
 pub enum OutputFormat {
@@ -41,39 +27,12 @@ pub struct CsvOpts {
     header: bool,
 }
 
-// 密码必定有字母, 用户指定密码是否支持: 长度, 数字, 大小写, 符号
-#[derive(Debug, Parser)]
-pub struct GenPassOpts {
-    #[arg(short, long, default_value_t = 16)]
-    pub length: u8,
-
-    #[arg(long, default_value_t = false)]
-    pub nonumber: bool,
-
-    #[arg(long, default_value_t = false)]
-    pub nolower: bool,
-
-    #[arg(long, default_value_t = false)]
-    pub noupper: bool,
-
-    #[arg(long, default_value_t = false)]
-    pub nosymbol: bool,
-}
-
-fn verify_input_file(filename: &str) -> Result<String, String> {
-    if Path::new(filename).exists() {
-        Ok(filename.into())
-    } else {
-        Err("File does not exists".into())
-    }
-}
-
 fn parse_format(format: &str) -> Result<OutputFormat, anyhow::Error> {
     // parse() 可以把一个 &str 解析成其他类型, 但是需要实现 FromStr trait
     format.parse()
 }
 
-// 由于采用了 `default_value` 方法, 所以需要实现 From trait
+// 实现 Display trait 时候需要用到
 impl From<OutputFormat> for &'static str {
     fn from(format: OutputFormat) -> Self {
         match format {

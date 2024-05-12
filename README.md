@@ -55,7 +55,7 @@ RCLI is a rust tool.
 
     csv 文件由 Headers 和 Records 两部分组成, Records 就是每一条记录, Headers 记录了每一条记录中对应的字段. 可以类比于 Excel 表格.
 
-    于是我们不仅可以通过 `deserialize` 方法获取反序列化之后 records 数据结构信息 ( records 字段直接跟数据结构中的字段对应), 还可以分别拿 headers 和 records 的迭代器, 然后 zip 映射成 pair 元组的迭代器, 最后使用 collect() 把迭代器转换成 serde-json crate 定义的 Value 数组.
+    于是我们不仅可以通过 `deserialize` 方法直接获取反序列化之后 records 数据结构信息 ( records 字段直接跟数据结构中的字段对应), 还可以分别拿 headers 和 records 的反序列化出来的对象迭代器, 然后 zip 映射成 pair 元组的迭代器, 最后使用 collect() 把迭代器转换成 serde-json crate 定义的 Value 数组.
 
     - reader.headers(): 返回解析器读到的第一行内容「即表头字段」的引用 `Result<&StringRecord>`;
     - reader.records(): 返回所有 records 字符串的迭代器, 迭代器中每个元素都是一个 `Result<StringRecord, Error>`
@@ -99,15 +99,26 @@ RCLI is a rust tool.
     struct Player {}
     ```
 
-    但这样定义映射就使得代码不具有一般性
+    但这样定义映射就使得代码不具有一般性, 考虑使用 csv crate 中分别反序列化的方式
 
-3.
 
 ### Anyhow
 
 1. 使用 anyhow 做错误处理的好处是: `Anyhow::Error`实现了大部分 `std::Result` 类型的 `Err<e>`(e 绝大部分情况都是不同的错误类型) 转换. 而 `?` 操作符实质上相当于一个 match pattern, 它会执行 `Err(e) => return Error(e.into())` , 因此当程序中需要 return 各种错误, 我们可以使用 `?` 来捕获错误类型并转换成 `anyhow::Error`类型. `anyhow::Error` 类型实现了 `display` trait, 因此可以被作为错误流打印.
-2.
 
+
+### rand
+
+1. rand crate 提供 rng 生成伪随机数, 提供 `random()` 函数为任意**基础类型**生成随机值. 使用 rng 需要注意: 一个 rng 确定了之后要生成的所有数据, 即你使用 rng 可以生成一个规模为 10 的数组, 那么你把 rng 发送给另一个人, 他生成的规模为 10 的数组应该和你生成的是相等的.
+2. 如果对随机数安全强度要求不高, 可以直接使用 `rand::thread_rng()`, 如果对安全要求较高, 则可以选择实现了 `rand::CryptoRng` trait 的其他 rng.
+3. rand crate 支持对一个 Vector 类型进行 shuffle, 还支持对从 Vector 中随机挑选一个元素. 使用二者都需要引入 `rand::seq::SliceRandom` 即可.
+
+
+### base64
+
+1. base64 crate 提供使用 `Engine` 去进行编解码, 我们可以对 `Engine` 进行一些个性化配置, 比如使用的 alphabet 或者 padding 形式.
+2. crate 内置了一些具有良好配置的 Engine, 比如 `STANDARD` 这个 engine， 它提供最标准的 alphabet : `alphabet::STANDARD` 和 PAD config；另一个常用 engine 是 `URL_SAFE_NO_PAD`，它使用 `alphabet::URL_SAFE` 字母表和 NO_PAD config。
+3. 使用时直接 `use base64::prelude::*`
 
 ### Misc
 1.  所有的基础类型 T 都实现了 `Option<T>` trait, 因此值有可能为 None 时, 就可以直接使用 Option(T) . 本例子中对 CLI 的输出定义为 `Option(String)`, 来处理未给定输出文件的情况.
