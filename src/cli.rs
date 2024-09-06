@@ -1,14 +1,19 @@
-use std::path::Path;
-
 use clap::Parser;
+use std::path::{Path, PathBuf};
 
 mod base64;
+mod chacha20;
 mod csv;
 mod genpass;
+mod http;
+mod text;
 
 pub use self::base64::{Base64Format, Base64SubCommand};
 pub use self::csv::{CsvOpts, OutputFormat};
+pub use chacha20::ChaCha20SubCommand;
 pub use genpass::GenPassOpts;
+pub use http::HttpSubcommand;
+pub use text::{SignFormat, TextSubCommand};
 
 #[derive(Debug, Parser)]
 #[command(name = "rcli", version, author, about = None, long_about = None)]
@@ -26,9 +31,17 @@ pub enum SubCommand {
     #[command(name = "base64", about = "Base64 encode/decode")]
     #[command(subcommand)]
     Base64(Base64SubCommand),
+    #[command(name = "text", about = "Text signature")]
+    #[command(subcommand)]
+    Text(TextSubCommand),
+    #[command(name = "chacha20", about = "Encrypt/Decrypt with ChaCha20")]
+    #[command(subcommand)]
+    ChaCha20(ChaCha20SubCommand),
+    #[command(name = "http", about = "HTTP server", subcommand)]
+    Http(HttpSubcommand),
 }
 
-fn verify_input_file(filename: &str) -> Result<String, String> {
+fn verify_file(filename: &str) -> Result<String, String> {
     if filename == "-" || Path::new(filename).exists() {
         Ok(filename.into())
     } else {
@@ -36,16 +49,22 @@ fn verify_input_file(filename: &str) -> Result<String, String> {
     }
 }
 
+fn verify_path(path: &str) -> Result<PathBuf, &'static str> {
+    let p = Path::new(path);
+    if p.exists() && p.is_dir() {
+        Ok(path.into())
+    } else {
+        Err("You provided a invalid path!")
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::verify_input_file;
+    use super::verify_file;
     #[test]
     fn test_verify_input_file() {
-        assert_eq!(verify_input_file("-"), Ok("-".into()));
-        assert_eq!(verify_input_file("Cargo.toml"), Ok("Cargo.toml".into()));
-        assert_eq!(
-            verify_input_file("a.txt"),
-            Err("File does not exists".into())
-        )
+        assert_eq!(verify_file("-"), Ok("-".into()));
+        assert_eq!(verify_file("Cargo.toml"), Ok("Cargo.toml".into()));
+        assert_eq!(verify_file("a.txt"), Err("File does not exists".into()))
     }
 }

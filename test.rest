@@ -1,0 +1,2 @@
+### Test index page
+Get http://localhost:8080/fixture

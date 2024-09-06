@@ -118,9 +118,22 @@ RCLI is a rust tool.
 
 1. base64 crate 提供使用 `Engine` 去进行编解码, 我们可以对 `Engine` 进行一些个性化配置, 比如使用的 alphabet 或者 padding 形式.
 2. crate 内置了一些具有良好配置的 Engine, 比如 `STANDARD` 这个 engine， 它提供最标准的 alphabet : `alphabet::STANDARD` 和 PAD config；另一个常用 engine 是 `URL_SAFE_NO_PAD`，它使用 `alphabet::URL_SAFE` 字母表和 NO_PAD config。
-3. 使用时直接 `use base64::prelude::*`
+3. 使用时直接 `use base64::prelude::*`，可以参考 [toturial](https://docs.rs/base64/latest/base64/) 中比较 clean 的导入方式
+
+### Blake3
+
+1. blake3 属于 blake 系 hash 算法，blake 算法是与 Keccak/SHA3 算法是 NIST 的同期竞争者。blake2（blake2s, blake2b）主要是对 blake 算法性能进行优化，blake3 进一步使用 simd 和并行计算扩大了性能优势，目前 blake3 的性能优势（CPU领域）远超其他 hash 算法。
+2. 使用方面就非常地简明直接，可以直接使用函数： `blake3::hash(b"")`，也可以使用一个 hasher 实例，然后不断地 update 数据，最终 finalize 一个哈希值。
+
+### ed25519-dalek
+
+1. ed25519 是一种非对称加密算法，在项目的「文本签名」功能中会使用到，与 Blake3 一样作为 hash 函数。可以这样做的原因是：公钥加密的公钥一般都可以从私钥导出。这里存在一个疑点，公钥加密生成的密文一般都不是固定长度，和真正的哈希函数还有很有区别的。
 
 ### Misc
 1.  所有的基础类型 T 都实现了 `Option<T>` trait, 因此值有可能为 None 时, 就可以直接使用 Option(T) . 本例子中对 CLI 的输出定义为 `Option(String)`, 来处理未给定输出文件的情况.
 2.  对于任意数据结构可以实现 FromStr trait, 然后就可以通过 `parse()` 方法完成从 &str 到目标数据类型的转换. 比如本项目中的 `OutputFormat`.
 3.  如果一个文件中逻辑过于庞杂, 则需要考虑 Refactor ; 如果多条逻辑出现重复, 则考虑抽象成一个函数/方法. 注意重构的时候实际上就是把一个文件变成一个文件夹, 有两种写法: 一种是直接文件夹中建立 `mod.rs` 来声明各个子模块, 另一种是在文件夹同目录创建与文件夹同名的 rs 文件 (比如 `process.rs` ) . 后者是新推荐的写法.
+4.  如果作用域需要返回不同类型值，则需要找其共性，然后用 Box 封装成 trait object。
+5.  `FromStr` trait 实现时需要定义错误类型 `Err`，因为有可能 `&str` 无法对应解析到相应类型
+6.  `fmt::Display` trait 实现时则比较写法比较固定且奇葩，返回值是 `fmt::Result`。
+7.  `From<T>` trait 经常用于把 T 转换成 `&str`，然后配合 `fmt::Display` trait 方便数据结构的打印展示。
