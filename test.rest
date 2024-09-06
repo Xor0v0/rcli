@@ -1,2 +1,5 @@
-### Test index page
+### Test static file server
 Get http://localhost:8080/fixture
+
+### Test static file server with tower-http
+Get http://localhost:8080/Cargo.toml
