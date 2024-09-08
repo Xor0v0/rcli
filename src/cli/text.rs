@@ -1,8 +1,10 @@
-use std::{fmt, path::PathBuf, str::FromStr};
-
 use super::{verify_file, verify_path};
-use anyhow::Ok;
+use crate::{process_generate_keys, process_text_sign, process_text_verify, CmdExecutor};
+use anyhow::{Ok, Result};
+use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 use clap::Parser;
+use std::{fmt, path::PathBuf, str::FromStr};
+use tokio::fs;
 
 #[derive(Debug, Parser)]
 pub enum TextSubCommand {
@@ -80,5 +82,50 @@ impl fmt::Display for SignFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // write!(f, "{}", Into::<&str>::into(self))
         write!(f, "{}", Into::<&str>::into(*self))
+    }
+}
+
+impl CmdExecutor for TextSubCommand {
+    async fn execute(self) -> Result<()> {
+        match self {
+            TextSubCommand::Sign(opts) => opts.execute().await,
+            TextSubCommand::Verify(opts) => opts.execute().await,
+            TextSubCommand::Generate(opts) => opts.execute().await,
+        }
+    }
+}
+
+impl CmdExecutor for SignOpts {
+    async fn execute(self) -> Result<()> {
+        let sig = process_text_sign(&self.input, &self.key, self.format)?;
+        println!("{}", BASE64_URL_SAFE_NO_PAD.encode(sig));
+        Ok(())
+    }
+}
+
+impl CmdExecutor for VerifyOpts {
+    async fn execute(self) -> Result<()> {
+        let res = process_text_verify(&self.input, &self.key, &self.sig, self.format)?;
+        println!("{}", res);
+        Ok(())
+    }
+}
+
+impl CmdExecutor for GenerateOpts {
+    async fn execute(self) -> Result<()> {
+        let keys = process_generate_keys(self.format)?;
+        match self.format {
+            SignFormat::Blake3 => {
+                let name = self.output.join("blake3.txt");
+                fs::write(name, &keys[0]).await?;
+            }
+            SignFormat::Ed25519 => {
+                let name = self.output.join("ed25519.sk");
+                fs::write(name, &keys[0]).await?;
+                let name = self.output.join("ed25519.pk");
+                fs::write(name, &keys[1]).await?;
+            }
+        }
+        Ok(())
     }
 }

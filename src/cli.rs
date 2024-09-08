@@ -1,6 +1,3 @@
-use clap::Parser;
-use std::path::{Path, PathBuf};
-
 mod base64;
 mod chacha20;
 mod csv;
@@ -10,9 +7,12 @@ mod text;
 
 pub use self::base64::{Base64Format, Base64SubCommand};
 pub use self::csv::{CsvOpts, OutputFormat};
+use crate::CmdExecutor;
 pub use chacha20::ChaCha20SubCommand;
+use clap::Parser;
 pub use genpass::GenPassOpts;
 pub use http::HttpSubcommand;
+use std::path::{Path, PathBuf};
 pub use text::{SignFormat, TextSubCommand};
 
 #[derive(Debug, Parser)]
@@ -39,6 +39,19 @@ pub enum SubCommand {
     ChaCha20(ChaCha20SubCommand),
     #[command(name = "http", about = "HTTP server", subcommand)]
     Http(HttpSubcommand),
+}
+
+impl CmdExecutor for SubCommand {
+    async fn execute(self) -> anyhow::Result<()> {
+        match self {
+            SubCommand::Csv(opts) => opts.execute().await,
+            SubCommand::GenPass(opts) => opts.execute().await,
+            SubCommand::Base64(cmd) => cmd.execute().await,
+            SubCommand::Text(cmd) => cmd.execute().await,
+            SubCommand::Http(cmd) => cmd.execute().await,
+            SubCommand::ChaCha20(cmd) => cmd.execute().await,
+        }
+    }
 }
 
 fn verify_file(filename: &str) -> Result<String, String> {
