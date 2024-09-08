@@ -1,9 +1,10 @@
-use crate::{process_http_serve, CmdExecutor};
-
 use super::verify_path;
+use crate::{process_http_serve, CmdExecutor};
 use clap::Parser;
+use enum_dispatch::enum_dispatch;
 use std::path::PathBuf;
 
+#[enum_dispatch(CmdExecutor)]
 #[derive(Debug, Parser)]
 pub enum HttpSubcommand {
     #[command(name = "serve", about = "Start a HTTP server")]
@@ -16,14 +17,6 @@ pub struct HttpServeOpts {
     pub dir: PathBuf,
     #[arg(short, long, default_value = "8080")]
     pub port: u16,
-}
-
-impl CmdExecutor for HttpSubcommand {
-    async fn execute(self) -> anyhow::Result<()> {
-        match self {
-            HttpSubcommand::Serve(opts) => opts.execute().await,
-        }
-    }
 }
 
 impl CmdExecutor for HttpServeOpts {

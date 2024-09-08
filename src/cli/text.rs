@@ -3,9 +3,11 @@ use crate::{process_generate_keys, process_text_sign, process_text_verify, CmdEx
 use anyhow::{Ok, Result};
 use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 use clap::Parser;
+use enum_dispatch::enum_dispatch;
 use std::{fmt, path::PathBuf, str::FromStr};
 use tokio::fs;
 
+#[enum_dispatch(CmdExecutor)]
 #[derive(Debug, Parser)]
 pub enum TextSubCommand {
     #[command(name = "sign", about = "Sign a message with a key")]
@@ -82,16 +84,6 @@ impl fmt::Display for SignFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // write!(f, "{}", Into::<&str>::into(self))
         write!(f, "{}", Into::<&str>::into(*self))
-    }
-}
-
-impl CmdExecutor for TextSubCommand {
-    async fn execute(self) -> Result<()> {
-        match self {
-            TextSubCommand::Sign(opts) => opts.execute().await,
-            TextSubCommand::Verify(opts) => opts.execute().await,
-            TextSubCommand::Generate(opts) => opts.execute().await,
-        }
     }
 }
 
